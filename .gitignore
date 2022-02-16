@@ -1,0 +1,5 @@
+/build
+/.vscode
+/cmake-build-*
+/sdkconfig.old
+/sdkconfig.ci
