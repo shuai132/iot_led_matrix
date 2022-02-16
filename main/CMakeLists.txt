@@ -1,5 +1,7 @@
 idf_component_register(SRCS "main.cpp"
         matrix/LedMatrix.cpp
+        matrix/LEDCanvas.cpp
+        gfx/Adafruit_GFX.cpp
         INCLUDE_DIRS ".")
 
 set(MYAPP __idf_main)

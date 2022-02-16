@@ -1,9 +1,7 @@
 #include <esp_log.h>
 #include <hal/gpio_types.h>
 
-#include <thread>
-
-#include "matrix/LedMatrix.h"
+#include "matrix/LEDCanvas.h"
 
 const static char *TAG = "MAIN";
 
@@ -17,15 +15,11 @@ extern "C" void app_main() {
     led.clearDisplay(i);
   }
 
-  led.setRow(0, 1, 0B10100000);
-  led.setColumn(0, 1, 0B10100000);
-
-  for (;;) {
-    ESP_LOGI(TAG, "loop");
-    for (int i = 0; i < 8; i++) {
-      led.setRow(1, 0, 0x80 >> i);
-      led.setColumn(1, 1, 0x80 >> i);
-      std::this_thread::sleep_for(std::chrono::milliseconds(300));
-    }
-  }
+  LEDCanvas canvas(&led, 64, 8);
+  canvas.setTextColor(1);
+  canvas.setCursor(1, 1);
+  canvas.print("Hello");
+  canvas.setCursor(33, 1);
+  canvas.print("World");
+  canvas.display();
 }
