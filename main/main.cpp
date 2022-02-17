@@ -1,10 +1,12 @@
 #include <esp_log.h>
+#include <esp_random.h>
 #include <hal/gpio_types.h>
 
 #include <nvs_handle.hpp>
 #include <thread>
 
 #include "esp_misc.h"
+#include "img/bilibili.h"
 #include "matrix/LEDCanvas.h"
 #include "wifi/smartconfig.h"
 #include "wifi/sntp.h"
@@ -57,6 +59,21 @@ static void start_wifi_task() {
   }
 }
 
+static void showLoading() {
+  ledCanvas->fillScreen(0);
+  ledCanvas->setCursor(0, 1);
+  ledCanvas->print("BILI");
+  ledCanvas->drawBitmap(24, 0, bili_tv_data1, bili_tv_width, bili_tv_height, 1);
+  ledCanvas->display();
+
+  for (int i = 0; i < 32; ++i) {
+    ledCanvas->drawRect(0, 9, 32, 6, 1);
+    ledCanvas->fillRect(0, 9, i + 1, 6, 1);
+    ledCanvas->display();
+    delay_ms(2000 / 32);
+  }
+}
+
 extern "C" void app_main() {
   ESP_LOGI(TAG, "init");
 
@@ -72,21 +89,14 @@ extern "C" void app_main() {
   }
 
   ledCanvas = std::make_shared<LEDCanvas>(ledMatrix, 32, 16);
-  ledCanvas->setTextColor(1);
-  ledCanvas->setCursor(1, 1);
-  ledCanvas->print("Hello");
-  ledCanvas->setCursor(1, 9);
-  ledCanvas->print("World");
-  ledCanvas->display();
-  delay_ms(1000);
+  showLoading();
 
   int lastSecond = -1;
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   for (;;) {
-    char time_str1[8];
-    char time_str2[8];
+    char time_str[8];
     {
       time_t timer;
       time(&timer);
@@ -97,17 +107,34 @@ extern "C" void app_main() {
         continue;
       }
       lastSecond = tm->tm_sec;
-      strftime(time_str1, sizeof(time_str1), "%H:%M", tm);
-      strftime(time_str2, sizeof(time_str2), "%M:%S", tm);
+      strftime(time_str, sizeof(time_str), "%H:%M", tm);
     }
 
     ledCanvas->fillScreen(0);
 
-    ledCanvas->setCursor(1, 1);
-    ledCanvas->print(time_str1);
+    /// up screen
+    {
+      ledCanvas->setCursor(1, 1);
+      ledCanvas->print(time_str);
+    }
+    /// bottom screen
+    {
+      // small tv animation
+      auto tv_data = lastSecond % 2 ? bili_tv_data1 : bili_tv_data2;
+      ledCanvas->drawBitmap(0, 8, tv_data, bili_tv_width, bili_tv_height, 1);
 
-    ledCanvas->setCursor(1, 9);
-    ledCanvas->print(time_str2);
+      // diy animation
+      uint8_t fullNum = lastSecond / 8;
+      if (fullNum != 0) {
+        ledCanvas->fillRect(8, 15 - fullNum + 1, 8, fullNum, 1);
+      }
+      ledCanvas->drawLine(8, 15 - fullNum, 8 + lastSecond % 8, 15 - fullNum, 1);
+
+      // second display
+      ledCanvas->setCursor(19, 9);
+      sprintf(time_str, "%02d", lastSecond);
+      ledCanvas->print(time_str);
+    }
 
     ledCanvas->display();
   }
