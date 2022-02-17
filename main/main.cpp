@@ -59,7 +59,7 @@ static void start_wifi_task() {
   }
 }
 
-static void showLoading() {
+static void show_loading() {
   ledCanvas->fillScreen(0);
   ledCanvas->setCursor(0, 1);
   ledCanvas->print("BILI");
@@ -72,6 +72,64 @@ static void showLoading() {
     ledCanvas->display();
     delay_ms(2000 / 32);
   }
+}
+
+static void update_time_ui() {
+  static int lastSecond = -1;
+  tm* time_now;
+  /// get time
+  {
+    time_t timer;
+    time(&timer);
+    time_now = localtime(&timer);
+    // avoid unnecessary screen update
+    if (time_now->tm_sec == lastSecond) {
+      delay_ms(10);
+      return;
+    }
+    lastSecond = time_now->tm_sec;
+  }
+
+  ledCanvas->fillScreen(0);
+
+  /// up screen
+  {
+    char time_str[8];
+    // hour
+    sprintf(time_str, "%02d", time_now->tm_hour);
+    ledCanvas->setCursor(2, 1);
+    ledCanvas->print(time_str);
+    // '::'
+    ledCanvas->drawPixel(15, 3, 1);
+    ledCanvas->drawPixel(16, 3, 1);
+    ledCanvas->drawPixel(15, 5, 1);
+    ledCanvas->drawPixel(16, 5, 1);
+    // min
+    sprintf(time_str, "%02d", time_now->tm_min);
+    ledCanvas->setCursor(19, 1);
+    ledCanvas->print(time_str);
+  }
+  /// bottom screen
+  {
+    // small tv animation
+    auto tv_data = lastSecond % 2 ? bili_tv_data1 : bili_tv_data2;
+    ledCanvas->drawBitmap(0, 8, tv_data, bili_tv_width, bili_tv_height, 1);
+
+    // diy animation
+    uint8_t fullNum = lastSecond / 8;
+    if (fullNum != 0) {
+      ledCanvas->fillRect(8, 15 - fullNum + 1, 8, fullNum, 1);
+    }
+    ledCanvas->drawLine(8, 15 - fullNum, 8 + lastSecond % 8, 15 - fullNum, 1);
+
+    // second display
+    ledCanvas->setCursor(19, 9);
+    char time_str[8];
+    sprintf(time_str, "%02d", lastSecond);
+    ledCanvas->print(time_str);
+  }
+
+  ledCanvas->display();
 }
 
 extern "C" void app_main() {
@@ -89,54 +147,9 @@ extern "C" void app_main() {
   }
 
   ledCanvas = std::make_shared<LEDCanvas>(ledMatrix, 32, 16);
-  showLoading();
+  show_loading();
 
-  int lastSecond = -1;
-
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "EndlessLoop"
   for (;;) {
-    char time_str[8];
-    {
-      time_t timer;
-      time(&timer);
-      auto tm = localtime(&timer);
-      // avoid unnecessary screen update
-      if (tm->tm_sec == lastSecond) {
-        delay_ms(10);
-        continue;
-      }
-      lastSecond = tm->tm_sec;
-      strftime(time_str, sizeof(time_str), "%H:%M", tm);
-    }
-
-    ledCanvas->fillScreen(0);
-
-    /// up screen
-    {
-      ledCanvas->setCursor(1, 1);
-      ledCanvas->print(time_str);
-    }
-    /// bottom screen
-    {
-      // small tv animation
-      auto tv_data = lastSecond % 2 ? bili_tv_data1 : bili_tv_data2;
-      ledCanvas->drawBitmap(0, 8, tv_data, bili_tv_width, bili_tv_height, 1);
-
-      // diy animation
-      uint8_t fullNum = lastSecond / 8;
-      if (fullNum != 0) {
-        ledCanvas->fillRect(8, 15 - fullNum + 1, 8, fullNum, 1);
-      }
-      ledCanvas->drawLine(8, 15 - fullNum, 8 + lastSecond % 8, 15 - fullNum, 1);
-
-      // second display
-      ledCanvas->setCursor(19, 9);
-      sprintf(time_str, "%02d", lastSecond);
-      ledCanvas->print(time_str);
-    }
-
-    ledCanvas->display();
+    update_time_ui();
   }
-#pragma clang diagnostic pop
 }
