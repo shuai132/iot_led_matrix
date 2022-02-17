@@ -20,11 +20,11 @@ extern "C" void app_main() {
     ledMatrix->clearDisplay(i);
   }
 
-  ledCanvas = std::make_shared<LEDCanvas>(ledMatrix, 64, 8);
+  ledCanvas = std::make_shared<LEDCanvas>(ledMatrix, 32, 16);
   ledCanvas->setTextColor(1);
   ledCanvas->setCursor(1, 1);
   ledCanvas->print("Hello");
-  ledCanvas->setCursor(33, 1);
+  ledCanvas->setCursor(1, 9);
   ledCanvas->print("World");
   ledCanvas->display();
   std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -47,7 +47,7 @@ extern "C" void app_main() {
     ledCanvas->setCursor(1, 1);
     ledCanvas->print(time_str1);
 
-    ledCanvas->setCursor(33, 1);
+    ledCanvas->setCursor(1, 9);
     ledCanvas->print(time_str2);
 
     ledCanvas->display();
