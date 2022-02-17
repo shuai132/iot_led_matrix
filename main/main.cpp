@@ -7,29 +7,32 @@
 
 const static char *TAG = "MAIN";
 
+static std::shared_ptr<LedMatrix> ledMatrix;
+static std::shared_ptr<LEDCanvas> ledCanvas;
+
 extern "C" void app_main() {
   ESP_LOGI(TAG, "init");
 
-  LedMatrix led = LedMatrix(GPIO_NUM_8, GPIO_NUM_6, GPIO_NUM_7, 8);
+  ledMatrix = std::make_shared<LedMatrix>(GPIO_NUM_8, GPIO_NUM_6, GPIO_NUM_7, 8);
   for (int i = 0; i < 8; i++) {
-    led.shutdown(i, false);
-    led.setIntensity(i, 1);
-    led.clearDisplay(i);
+    ledMatrix->shutdown(i, false);
+    ledMatrix->setIntensity(i, 1);
+    ledMatrix->clearDisplay(i);
   }
 
-  LEDCanvas canvas(&led, 64, 8);
-  canvas.setTextColor(1);
-  canvas.setCursor(1, 1);
-  canvas.print("Hello");
-  canvas.setCursor(33, 1);
-  canvas.print("World");
-  canvas.display();
+  ledCanvas = std::make_shared<LEDCanvas>(ledMatrix, 64, 8);
+  ledCanvas->setTextColor(1);
+  ledCanvas->setCursor(1, 1);
+  ledCanvas->print("Hello");
+  ledCanvas->setCursor(33, 1);
+  ledCanvas->print("World");
+  ledCanvas->display();
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   for (;;) {
-    canvas.fillScreen(0);
+    ledCanvas->fillScreen(0);
 
     char time_str1[8];
     char time_str2[8];
@@ -41,13 +44,13 @@ extern "C" void app_main() {
       strftime(time_str2, sizeof(time_str2), "%M:%S", tm);
     }
 
-    canvas.setCursor(1, 1);
-    canvas.print(time_str1);
+    ledCanvas->setCursor(1, 1);
+    ledCanvas->print(time_str1);
 
-    canvas.setCursor(33, 1);
-    canvas.print(time_str2);
+    ledCanvas->setCursor(33, 1);
+    ledCanvas->print(time_str2);
 
-    canvas.display();
+    ledCanvas->display();
     std::this_thread::sleep_for(std::chrono::microseconds(300));
   }
 #pragma clang diagnostic pop

@@ -4,15 +4,18 @@
  */
 #pragma once
 
+#include <memory>
+
 #include "LedMatrix.h"
 #include "gfx/Adafruit_GFX.h"
 
 class LEDCanvas : public GFXcanvas1 {
  public:
-  LEDCanvas(LedMatrix* ledMatrix, uint16_t w, uint16_t h);
+  LEDCanvas(std::shared_ptr<LedMatrix> ledMatrix, uint16_t w, uint16_t h);
+  virtual ~LEDCanvas();
 
   void display();
 
  private:
-  LedMatrix* ledMatrix;
+  std::shared_ptr<LedMatrix> ledMatrix;
 };

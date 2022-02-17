@@ -1,6 +1,10 @@
 #include "LEDCanvas.h"
 
-LEDCanvas::LEDCanvas(LedMatrix* ledMatrix, uint16_t w, uint16_t h) : GFXcanvas1(w, h), ledMatrix(ledMatrix) {}
+#include <utility>
+
+LEDCanvas::LEDCanvas(std::shared_ptr<LedMatrix> ledMatrix, uint16_t w, uint16_t h) : GFXcanvas1(w, h), ledMatrix(std::move(ledMatrix)) {}
+
+LEDCanvas::~LEDCanvas() = default;
 
 void LEDCanvas::display() {
   int devNum = ledMatrix->getDeviceCount();
