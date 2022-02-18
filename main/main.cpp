@@ -1,5 +1,8 @@
+#include <driver/gpio.h>
 #include <esp_log.h>
 #include <esp_random.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 #include <hal/gpio_types.h>
 
 #include <nvs_handle.hpp>
@@ -75,6 +78,62 @@ static void show_loading() {
   }
 }
 
+static void config_button() {
+  static xQueueHandle gpio_evt_queue = xQueueCreate(8, 1);
+  ESP_ERROR_CHECK(gpio_install_isr_service(0));
+  gpio_num_t gpio_pins[] = {GPIO_NUM_1, GPIO_NUM_2, GPIO_NUM_9, GPIO_NUM_10};
+
+  for (auto pin : gpio_pins) {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = static_cast<uint64_t>(1 << pin),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_NEGEDGE,
+    };
+    gpio_config(&io_conf);
+
+    struct UserData {
+      gpio_num_t pin{};
+      std::chrono::steady_clock::time_point lastUpdateTime{};
+    };
+    auto data = new UserData();  // no need free!!!
+    data->pin = pin;
+    ESP_ERROR_CHECK(gpio_isr_handler_add(
+        pin,
+        [](void* args) IRAM_ATTR {
+          auto data = static_cast<UserData*>(args);
+          // avoid jitter
+          auto now = std::chrono::steady_clock::now();
+          if (now - data->lastUpdateTime < std::chrono::milliseconds(100)) {
+            return;
+          }
+          data->lastUpdateTime = now;
+          uint8_t value = data->pin;
+          xQueueSendFromISR(gpio_evt_queue, &value, nullptr);
+        },
+        data));
+  }
+
+  std::thread([] {
+    for (;;) {
+      uint8_t pin;
+      if (!xQueueReceive(gpio_evt_queue, &pin, portMAX_DELAY)) continue;
+      ESP_LOGI(TAG, "button: %d", pin);
+      switch (pin) {
+        case GPIO_NUM_1:
+          break;
+        case GPIO_NUM_2:
+          break;
+        case GPIO_NUM_9:
+          break;
+        case GPIO_NUM_10:
+          break;
+      }
+    }
+  }).detach();
+}
+
 static void update_time_ui() {
   static int lastSecond = -1;
   tm* time_now;
@@ -139,6 +198,7 @@ extern "C" void app_main() {
   esp_init();
   sntp_env_init();
   start_wifi_task();
+  config_button();
 
   ledMatrix = std::make_shared<LedMatrix>(GPIO_NUM_8, GPIO_NUM_6, GPIO_NUM_7, 8);
   for (int i = 0; i < 8; i++) {
