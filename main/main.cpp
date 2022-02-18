@@ -66,11 +66,12 @@ static void show_loading() {
   ledCanvas->drawBitmap(24, 0, bili_tv_data1, bili_tv_width, bili_tv_height, 1);
   ledCanvas->display();
 
-  for (int i = 0; i < 32; ++i) {
-    ledCanvas->drawRect(0, 9, 32, 6, 1);
-    ledCanvas->fillRect(0, 9, i + 1, 6, 1);
+  // show loading for 2 second
+  for (int i = 1; i < 32; ++i) {
+    ledCanvas->drawRoundRect(0, 9, 32, 6, 1, 1);
+    ledCanvas->fillRoundRect(0, 9, i + 1, 6, 1, 1);
     ledCanvas->display();
-    delay_ms(2000 / 32);
+    delay_ms(1000 * 2 / 32);
   }
 }
 
