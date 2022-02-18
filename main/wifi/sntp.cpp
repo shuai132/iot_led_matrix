@@ -28,7 +28,7 @@ void sntp_env_init() {
   tzset();
 
   sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, "pool.ntp.org");
+  sntp_setservername(0, "ntp.aliyun.com");
   sntp_set_time_sync_notification_cb(time_sync_notification_cb);
   sntp_init();
 }
