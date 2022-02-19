@@ -6,6 +6,7 @@ idf_component_register(SRCS "main.cpp"
         wifi/wifi_station.cpp
         wifi/sntp.cpp
         esp_misc.cpp
+        EventLoop.cpp
         INCLUDE_DIRS ".")
 
 set(MYAPP __idf_main)
