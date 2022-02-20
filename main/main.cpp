@@ -347,7 +347,7 @@ static void update_time_ui() {
 static void show_music() {
   const uint16_t Sn = adc->getSn();
   auto& data = adc->readData();
-  // FFT
+  // FFT计算频谱
   std::vector<fft_complex> fftResult;
   fftResult.resize(data.size());
   for (int i = 0; i < data.size(); ++i) {
@@ -363,10 +363,34 @@ static void show_music() {
   }
 
   ledCanvas->fillScreen(0);
-  for (int i = 0; i < 32; ++i) {
-    auto am = (uint16_t)pointsAmp[1 + i];
-    ledCanvas->drawLine(i, 15, i, 15 - am, 1);
+  const int showNumMax = 32;
+  static std::vector<uint8_t> amLast;
+  amLast.resize(showNumMax);
+  std::vector<uint8_t> am;
+  am.resize(showNumMax);
+  // 绘制频谱
+  for (int i = 0; i < showNumMax; ++i) {
+    auto v = std::min((uint16_t)15, (uint16_t)pointsAmp[1 + i]);
+    if (amLast[i] < v) {
+      amLast[i] = v;
+    }
+    am[i] = v;
+    ledCanvas->drawLine(i, 15, i, 15 - am[i], 1);
   }
+
+  // 落下特效
+  static IntervalCall intervalCall(std::chrono::milliseconds(50), [] {
+    for (auto& item : amLast) {
+      if (item > 0) {
+        --item;
+      }
+    }
+  });
+  intervalCall.poll();
+  for (int i = 0; i < showNumMax; ++i) {
+    ledCanvas->drawPixel(i, 15 - amLast[i], 1);
+  }
+
   ledCanvas->display();
 }
 
