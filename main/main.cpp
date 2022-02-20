@@ -8,6 +8,8 @@
 #include <nvs_handle.hpp>
 
 #include "EventLoop.h"
+#include "adc/adc_dma.h"
+#include "adc/fft.h"
 #include "esp_misc.h"
 #include "img/bilibili.h"
 #include "matrix/LEDCanvas.h"
@@ -33,13 +35,21 @@ enum class TimeSettingType {
 };
 #define TimeSettingTypeNum 6
 
-#define BUTTON_UP GPIO_NUM_1
-#define BUTTON_DOWN GPIO_NUM_2
-#define BUTTON_SET GPIO_NUM_3
-#define BUTTON_SW GPIO_NUM_4
+enum class DeviceShowType {
+  kTime,
+  kMusic,
+};
+#define DeviceShowTypeNum 2
+
+#define BUTTON_UP GPIO_NUM_1    // 时间+
+#define BUTTON_DOWN GPIO_NUM_2  // 时间-
+#define BUTTON_SET GPIO_NUM_3   // 设置时间
+#define BUTTON_SW GPIO_NUM_4    // 切换时间显示
+#define BUTTON_FUN GPIO_NUM_5   // 功能切换
 
 static BottomShowType bottomShowType;
 static TimeSettingType timeSettingType;
+static DeviceShowType deviceShowType;
 
 const static char* TAG = "MAIN";
 const static char* NS_NAME_WIFI = "wifi";
@@ -48,6 +58,8 @@ static std::shared_ptr<LedMatrix> ledMatrix;
 static std::shared_ptr<LEDCanvas> ledCanvas;
 static EventLoop eventLoop;
 static xQueueHandle gpio_evt_queue = xQueueCreate(8, 1);
+
+static std::unique_ptr<ADC> adc;
 
 static void on_wifi_connected(const char* ip) { sntp_obtain_time(); }
 
@@ -108,7 +120,7 @@ static void show_loading() {
 
 static void config_button() {
   ESP_ERROR_CHECK(gpio_install_isr_service(0));
-  gpio_num_t gpio_pins[] = {BUTTON_UP, BUTTON_DOWN, BUTTON_SET, BUTTON_SW};
+  gpio_num_t gpio_pins[] = {BUTTON_UP, BUTTON_DOWN, BUTTON_SET, BUTTON_SW, BUTTON_FUN};
 
   for (auto pin : gpio_pins) {
     gpio_config_t io_conf = {
@@ -188,6 +200,10 @@ static void check_button() {
           .tv_usec = 0,
       };
       settimeofday(&now, nullptr);
+    } break;
+    case BUTTON_FUN: {
+      static uint8_t count = 0;
+      deviceShowType = static_cast<DeviceShowType>(++count % DeviceShowTypeNum);
     } break;
     default:
       break;
@@ -328,6 +344,43 @@ static void update_time_ui() {
   ledCanvas->display();
 }
 
+static void show_music() {
+  const uint16_t Sn = adc->getSn();
+  auto& data = adc->readData();
+  // FFT
+  std::vector<fft_complex> fftResult;
+  fftResult.resize(data.size());
+  for (int i = 0; i < data.size(); ++i) {
+    fftResult[i].real = data[i];
+    fftResult[i].imag = 0;
+  }
+  fft_cal_fft(fftResult.data(), Sn);
+
+  std::vector<float> pointsAmp;
+  pointsAmp.resize(Sn / 2);
+  for (int i = 0; i < Sn / 2; ++i) {
+    pointsAmp[i] = (float)fft_cal_amp(fftResult[i], Sn);
+  }
+
+  ledCanvas->fillScreen(0);
+  for (int i = 0; i < 32; ++i) {
+    auto am = (uint16_t)pointsAmp[1 + i];
+    ledCanvas->drawLine(i, 15, i, 15 - am, 1);
+  }
+  ledCanvas->display();
+}
+
+static void refresh_ui() {
+  switch (deviceShowType) {
+    case DeviceShowType::kTime:
+      update_time_ui();
+      break;
+    case DeviceShowType::kMusic:
+      show_music();
+      break;
+  }
+}
+
 extern "C" void app_main() {
   ESP_LOGI(TAG, "init");
 
@@ -343,13 +396,16 @@ extern "C" void app_main() {
     ledMatrix->clearDisplay(i);
   }
 
+  adc = std::make_unique<ADC>();
+  adc->start(50 * 1000, 128);
+
   ledCanvas = std::make_shared<LEDCanvas>(ledMatrix, 32, 16);
   show_loading();
 
   for (;;) {
     eventLoop.poll();
     check_button();
-    update_time_ui();
+    refresh_ui();
     delay_ms(10);
   }
 }
