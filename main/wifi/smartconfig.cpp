@@ -14,8 +14,8 @@
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 
-static WiFiInfoHandle update_cb;
-static ConnectStateHandle connect_cb;
+static WiFiInfoHandle update_cb DRAM_ATTR;       // 当前工具链可能有问题，需添加`DRAM_ATTR`，否则赋值时崩溃，原因未知
+static ConnectStateHandle connect_cb DRAM_ATTR;  // 同上
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t s_wifi_event_group;
