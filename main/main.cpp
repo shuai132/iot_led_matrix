@@ -271,7 +271,7 @@ static void update_time_ui() {
     });
     intervalCall.poll();
     for (int i = 0; i < 9; ++i) {
-      ledCanvas->drawLine(9 + i, 16, 9 + i, 16 - array[i], 1);
+      ledCanvas->drawLine(9 + i, 15, 9 + i, 15 - array[i], 1);
     }
 
     // second display
