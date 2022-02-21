@@ -50,9 +50,11 @@ enum class DeviceShowType {
 static BottomShowType bottomShowType;
 static TimeSettingType timeSettingType;
 static DeviceShowType deviceShowType;
+static uint32_t soundGain;  // 为环境噪音降低敏感度
 
 const static char* TAG = "MAIN";
 const static char* NS_NAME_WIFI = "wifi";
+const static char* NS_NAME_SOUND = "sound";
 
 static std::shared_ptr<LedMatrix> ledMatrix;
 static std::shared_ptr<LEDCanvas> ledCanvas;
@@ -172,6 +174,13 @@ static void check_button() {
     case BUTTON_UP:
     case BUTTON_DOWN: {
       int v = pin == BUTTON_UP ? 1 : -1;
+      if (deviceShowType == DeviceShowType::kMusic) {
+        soundGain += v * 5;
+        soundGain = std::min(soundGain, (uint32_t)100);
+        auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
+        nvs->set_item("gain", soundGain);
+        break;
+      }
       tm* time_now;
       time_t timer;
       time(&timer);
@@ -370,7 +379,7 @@ static void show_music() {
   am.resize(showNumMax);
   // 绘制频谱
   for (int i = 0; i < showNumMax; ++i) {
-    auto v = std::min((uint16_t)15, (uint16_t)pointsAmp[1 + i]);
+    auto v = std::min((uint16_t)15, (uint16_t)(pointsAmp[1 + i] / soundGain));
     if (amLast[i] < v) {
       amLast[i] = v;
     }
@@ -394,6 +403,13 @@ static void show_music() {
   ledCanvas->display();
 }
 
+static void config_music() {
+  adc = std::make_unique<ADC>();
+  adc->start(50 * 1000, 128);
+  auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
+  nvs->get_item("gain", soundGain);
+}
+
 static void refresh_ui() {
   switch (deviceShowType) {
     case DeviceShowType::kTime:
@@ -412,6 +428,7 @@ extern "C" void app_main() {
   sntp_env_init();
   start_wifi_task();
   config_button();
+  config_music();
 
   ledMatrix = std::make_shared<LedMatrix>(GPIO_NUM_8, GPIO_NUM_6, GPIO_NUM_7, 8);
   for (int i = 0; i < 8; i++) {
@@ -419,9 +436,6 @@ extern "C" void app_main() {
     ledMatrix->setIntensity(i, 1);
     ledMatrix->clearDisplay(i);
   }
-
-  adc = std::make_unique<ADC>();
-  adc->start(50 * 1000, 128);
 
   ledCanvas = std::make_shared<LEDCanvas>(ledMatrix, 32, 16);
   show_loading();
