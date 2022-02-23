@@ -59,7 +59,7 @@ const static char* NS_NAME_SOUND = "sound";
 static std::shared_ptr<LedMatrix> ledMatrix;
 static std::shared_ptr<LEDCanvas> ledCanvas;
 static EventLoop eventLoop;
-static xQueueHandle gpio_evt_queue = xQueueCreate(8, 1);
+static QueueHandle_t gpioEvtQueue = xQueueCreate(8, 1);
 
 static std::unique_ptr<ADC> adc;
 
@@ -147,7 +147,7 @@ static void config_button() {
           // avoid jitter
           if (!data->intervalCall.poll()) return;
           uint8_t value = data->pin;
-          xQueueSendFromISR(gpio_evt_queue, &value, nullptr);
+          xQueueSendFromISR(gpioEvtQueue, &value, nullptr);
         },
         data));
   }
@@ -155,7 +155,7 @@ static void config_button() {
 
 static void check_button() {
   uint8_t pin;
-  if (!xQueueReceive(gpio_evt_queue, &pin, 0)) return;
+  if (!xQueueReceive(gpioEvtQueue, &pin, 0)) return;
   ESP_LOGI(TAG, "button: %d", pin);
   switch (pin) {
     case BUTTON_SW: {
