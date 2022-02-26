@@ -50,7 +50,7 @@ enum class DeviceShowType {
 static BottomShowType bottomShowType;
 static TimeSettingType timeSettingType;
 static DeviceShowType deviceShowType;
-static uint32_t soundGain;  // 为环境噪音降低敏感度
+static uint32_t soundGain = 1;  // 为环境噪音降低敏感度
 
 const static char* TAG = "MAIN";
 const static char* NS_NAME_WIFI = "wifi";
@@ -176,7 +176,10 @@ static void check_button() {
       int v = pin == BUTTON_UP ? 1 : -1;
       if (deviceShowType == DeviceShowType::kMusic) {
         soundGain += v * 5;
-        soundGain = std::min(soundGain, (uint32_t)100);
+        if (soundGain > 100) {
+          soundGain = 1;
+        }
+        ESP_LOGI(TAG, "gain: %u", soundGain);
         auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
         nvs->set_item("gain", soundGain);
         break;
@@ -379,7 +382,7 @@ static void show_music() {
   am.resize(showNumMax);
   // 绘制频谱
   for (int i = 0; i < showNumMax; ++i) {
-    auto v = std::min((uint16_t)15, (uint16_t)(pointsAmp[1 + i] / soundGain));
+    auto v = std::min((uint16_t)15, (uint16_t)(pointsAmp[3 + i] / soundGain));
     if (amLast[i] < v) {
       amLast[i] = v;
     }
@@ -405,7 +408,7 @@ static void show_music() {
 
 static void config_music() {
   adc = std::make_unique<ADC>();
-  adc->start(50 * 1000, 128);
+  adc->start(6 * 1000, 128);
   auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
   nvs->get_item("gain", soundGain);
 }
