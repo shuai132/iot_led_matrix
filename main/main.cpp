@@ -45,7 +45,7 @@ enum class DeviceShowType {
 #define BUTTON_DOWN GPIO_NUM_2  // 时间-
 #define BUTTON_SET GPIO_NUM_3   // 设置时间
 #define BUTTON_SW GPIO_NUM_4    // 切换时间显示
-#define BUTTON_FUN GPIO_NUM_5   // 功能切换
+#define BUTTON_FUN GPIO_NUM_9   // 功能切换
 
 static BottomShowType bottomShowType;
 static TimeSettingType timeSettingType;
@@ -122,7 +122,7 @@ static void show_loading() {
 
 static void config_button() {
   ESP_ERROR_CHECK(gpio_install_isr_service(0));
-  gpio_num_t gpio_pins[] = {BUTTON_UP, BUTTON_DOWN, BUTTON_SET, BUTTON_SW, BUTTON_FUN};
+  gpio_num_t gpio_pins[] = {BUTTON_FUN};
 
   for (auto pin : gpio_pins) {
     gpio_config_t io_conf = {
@@ -409,8 +409,9 @@ static void show_music() {
 static void config_music() {
   adc = std::make_unique<ADC>();
   adc->start(6 * 1000, 128);
-  auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
-  nvs->get_item("gain", soundGain);
+//  auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
+//  nvs->get_item("gain", soundGain);
+  soundGain = 1;
 }
 
 static void refresh_ui() {
