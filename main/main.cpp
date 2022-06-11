@@ -54,7 +54,7 @@ static uint32_t soundGain = 1;  // 为环境噪音降低敏感度
 
 const static char* TAG = "MAIN";
 const static char* NS_NAME_WIFI = "wifi";
-const static char* NS_NAME_SOUND = "sound";
+const static char* NS_NAME_MISC = "misc";
 
 static std::shared_ptr<LedMatrix> ledMatrix;
 static std::shared_ptr<LEDCanvas> ledCanvas;
@@ -180,7 +180,7 @@ static void check_button() {
           soundGain = 1;
         }
         ESP_LOGI(TAG, "gain: %u", soundGain);
-        auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
+        auto nvs = nvs::open_nvs_handle(NS_NAME_MISC, NVS_READWRITE);
         nvs->set_item("gain", soundGain);
         break;
       }
@@ -216,6 +216,8 @@ static void check_button() {
     case BUTTON_FUN: {
       static uint8_t count = 0;
       deviceShowType = static_cast<DeviceShowType>(++count % DeviceShowTypeNum);
+      auto nvs = nvs::open_nvs_handle(NS_NAME_MISC, NVS_READWRITE);
+      nvs->set_item("show_type", deviceShowType);
     } break;
     default:
       break;
@@ -409,10 +411,11 @@ static void show_music() {
 static void config_music() {
   adc = std::make_unique<ADC>();
   adc->start(6 * 1000, 128);
-//  auto nvs = nvs::open_nvs_handle(NS_NAME_SOUND, NVS_READWRITE);
-//  nvs->get_item("gain", soundGain);
-  soundGain = 1;
+  auto nvs = nvs::open_nvs_handle(NS_NAME_MISC, NVS_READWRITE);
+  nvs->get_item("show_type", deviceShowType);
+  // nvs->get_item("gain", soundGain);
 }
+
 
 static void refresh_ui() {
   switch (deviceShowType) {
