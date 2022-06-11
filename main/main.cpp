@@ -384,12 +384,12 @@ static void show_music() {
   am.resize(showNumMax);
   // 绘制频谱
   for (int i = 0; i < showNumMax; ++i) {
-    auto v = std::min((uint16_t)15, (uint16_t)(pointsAmp[3 + i] / soundGain));
+    auto v = std::min((uint16_t)16, (uint16_t)(pointsAmp[3 + i] / soundGain));
     if (amLast[i] < v) {
       amLast[i] = v;
     }
     am[i] = v;
-    ledCanvas->drawLine(i, 15, i, 15 - am[i], 1);
+    ledCanvas->drawLine(i, 16, i, 16 - am[i], 1);
   }
 
   // 落下特效
@@ -402,7 +402,7 @@ static void show_music() {
   });
   intervalCall.poll();
   for (int i = 0; i < showNumMax; ++i) {
-    ledCanvas->drawPixel(i, 15 - amLast[i], 1);
+    ledCanvas->drawPixel(i, 16 - amLast[i], 1);
   }
 
   ledCanvas->display();
