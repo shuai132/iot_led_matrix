@@ -286,7 +286,7 @@ static void update_time_ui() {
     ledCanvas->print(time_str);
   };
   auto bottom_show_year = [&time_now] {
-    char time_str[8];
+    char time_str[14];
     // 2020
     sprintf(time_str, "%d Y", 1900 + time_now->tm_year);
     ledCanvas->setCursor(2, 9);
