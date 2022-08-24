@@ -1,16 +1,7 @@
 set(CMAKE_CXX_STANDARD 14)
 
-idf_component_register(SRCS "main.cpp"
-        matrix/LedMatrix.cpp
-        matrix/LEDCanvas.cpp
-        gfx/Adafruit_GFX.cpp
-        wifi/smartconfig.cpp
-        wifi/wifi_station.cpp
-        wifi/sntp.cpp
-        adc/adc_dma.cpp
-        adc/fft.c
-        esp_misc.cpp
-        EventLoop.cpp
+idf_component_register(SRCS "esp_hid_host_main.c"
+        esp_hid_gap.c
         INCLUDE_DIRS ".")
 
 set(MYAPP __idf_main)
