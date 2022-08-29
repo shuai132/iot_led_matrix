@@ -1,9 +1,6 @@
 set(CMAKE_CXX_STANDARD 14)
 
-file(GLOB SRCS
-        midifile/*.cpp
-        )
-idf_component_register(SRCS "main2.cpp" ${SRCS}
+idf_component_register(SRCS "main2.cpp"
         INCLUDE_DIRS ".")
 
 set(MYAPP __idf_main)
